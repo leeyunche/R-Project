@@ -1,0 +1,91 @@
+---
+title: "Logistic Regression"
+date: "2024-03-31"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r}
+#Import data
+Airline<-read.csv("Model estimation.csv")
+
+#Overview data
+names(Airline)
+
+#re-name
+names(Airline)[1]<-"Inflight.wifi.service"
+names(Airline)[1]
+```
+
+```{r}
+# Re-code "churn"
+Airline$Churn<-ifelse(Airline$Churn=="Churn",1,0)
+sum(Airline$Churn==1)
+
+3742/6717 # about 56% customers will churn
+```
+
+```{r}
+Model1<-glm(Churn~Inflight.wifi.service + 
+              Departure.Arrival.time.convenient + 
+              Ease.of.Online.booking + 
+              Food.and.drink+
+              Online.boarding + 
+              Inflight.entertainment + 
+              On.board.service + 
+              Leg.room.service + 
+              Inflight.service +
+              Departure.Delay.in.Minutes +
+              Arrival.Delay.in.Minutes,data=Airline, family = binomial)
+```
+
+```{r}
+# Global model evaluation : Predictive accuracy (range 0-1)
+Prob.Fit1<-predict(Model1,data=Airline,type="response")
+Airline2<-cbind(Airline,Prob.Fit1)
+Pred_Churn1<-ifelse(Prob.Fit1>0.5, 1,0)
+Airline3<-cbind(Airline,Pred_Churn1)
+table(Pred_Churn1,Airline$Churn)
+(2314+3141)/6717 # predict accuracy= 0.812
+```
+
+```{r}
+# Local model evaluation
+library(car)
+vif(Model1) # some VIFs are also a bit high (>10) 
+summary(Model1) # some model parameters are not significant
+```
+
+```{r}
+# Model revise
+# Since Departure.Delay.in.Minutes VIF is greater than 10 and it is insignificant, we are thinking to remove Departure.Delay.in.Minutes first and see if the results will be better.
+
+Model2<-glm(Churn~Inflight.wifi.service + 
+              Departure.Arrival.time.convenient + 
+              Ease.of.Online.booking + 
+              Food.and.drink+
+              Online.boarding + 
+              Inflight.entertainment + 
+              On.board.service + 
+              Leg.room.service + 
+              Inflight.service +
+              Arrival.Delay.in.Minutes,data=Airline, family = binomial)
+```
+
+```{r}
+Prob.Fit2<-predict(Model2,data=Airline,type="response")
+Airline2.2<-cbind(Airline,Prob.Fit2)
+Pred_Churn2<-ifelse(Prob.Fit2>0.5,1,0)
+Airline2.3<-cbind(Airline,Pred_Churn2)
+table(Pred_Churn2,Airline$Churn)
+(2311+3137)/6717 
+```
+
+```{r}
+vif(Model2)
+summary(Model2)
+BIC(Model1)
+BIC(Model2)
+```
+According to the results of model adjustment, the multicolinearity issue has been eliminated, and the BIC value of model 2 is also smaller, making it a more appropriate model.
