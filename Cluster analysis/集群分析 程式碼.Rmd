@@ -1,0 +1,66 @@
+---
+title: "Cluster Analysis"
+date: "2024-03-09"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+```{r}
+# Import Data
+CCData <- read.csv("HCA Exercise.csv")
+
+# Select the variable
+cluster.initial <- data.frame(CCData$BALANCE_FREQUENCY,
+                              CCData$ONEOFF_PURCHASES,
+                              CCData$CASH_ADVANCE,
+                              CCData$CREDIT_LIMIT)
+```
+
+Check assumption
+```{r}
+# Assumption 1: Representative sample
+# Assumption 2: Check outliers
+summary(cluster.initial)
+
+# Assumption 3: No multicollinearity issues
+cor(cluster.initial)
+
+# Assumption 4: All variables are measured on a metric and comparable scale
+str(cluster.initial)
+```
+
+Standardized variables and create new data frame with standardized variables
+```{r}
+z_BALANCE_FREQUENCY <- scale(cluster.initial$CCData.BALANCE_FREQUENCY)
+z_ONEOFF_PURCHASES <- scale(cluster.initial$CCData.ONEOFF_PURCHASES)
+z_ADVANCE <- scale(cluster.initial$CCData.CASH_ADVANCE)
+z_CREDIT_LIMIT <- scale(cluster.initial$CCData.CREDIT_LIMIT)
+
+cluster.z <- data.frame(z_BALANCE_FREQUENCY,
+                        z_ONEOFF_PURCHASES,
+                        z_ADVANCE,
+                        z_CREDIT_LIMIT)
+```
+
+Conducting hierarchical cluster analysis
+```{r}
+# Calculate distance matrix. Then conduct hierarchical cluster analysis 
+hcc <- hclust(dist(cluster.z, method = "euclidean"), method = "ward.D2")
+
+# Plot dendogram 
+plot(hcc,hang= -1)
+
+# Setting the number of groups and draw dendogram with red borders around the nGroup clusters 
+nGroup <- 4
+rect.hclust(hcc, k=nGroup)
+
+# Cut tree into nGroup clusters
+groups <- cutree(hcc, k=nGroup)
+
+# Add groups to my dataset 
+hcc.groups <- cbind(CCData, groups) 
+
+#export new dataset 
+write.csv(hcc.groups, "hcc.groups4.csv") 
+```
